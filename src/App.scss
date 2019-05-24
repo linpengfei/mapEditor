@@ -1,0 +1,57 @@
+@import '~antd/dist/antd.css';
+@import 'assets/iconfont/iconfont.css';
+#root {
+  height: 100%;
+  width: 100%;
+  /*min-width: 1240px;*/
+  /*min-height: 800px;*/
+}
+.ant-layout {
+  height: 100%;
+}
+.actionHeaders {
+  height: 48px;
+  line-height: 48px;
+  padding: 0;
+  background: #fff;
+  border-bottom: 1px solid #6b6b6b;
+}
+.actionMenuItem {
+  display: inline-block;
+  width: 100px;
+  text-align: center;
+  line-height: 48px;
+  height: 48px;
+}
+.sketchpadContainers {
+  height: calc(100% - 5px);
+  perspective: 800px;
+}
+.threeContainers {
+  width: 1000px;
+  height: 700px;
+  margin: auto;
+  border: 1px solid red;
+}
+.canvasContent {
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+}
+
+
+
+// 新交互
+.editorMainContainers {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  .actionContainer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 350px;
+    //height: 300px;
+    z-index: 1;
+  }
+}
