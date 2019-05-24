@@ -138,8 +138,8 @@ this.selected = object;
             const perspective = 800;
             const fov = 180 * ( 2 * Math.atan( clientHeight / 2 / perspective ) ) / Math.PI;
             // this.camera = new PerspectiveCamera(100, clientWidth / clientHeight, 1, 1000);
-            this.camera = new PerspectiveCamera( fov, clientWidth / clientHeight, 1, 10000 );
-            // this.camera = new OrthographicCamera(- 1000 , 1000, 1000, -1000, 0.01, 100000)
+            // this.camera = new PerspectiveCamera( fov, clientWidth / clientHeight, 1, 10000 );
+            this.camera = new OrthographicCamera(-clientWidth/2 , clientWidth/2, clientHeight/2, -clientHeight / 2, 0.01, 100000)
             this.camera.name = 'Camera';
             this.camera.position.set( 0, 0, perspective );
             this.camera.lookAt( new Vector3() );
@@ -165,25 +165,27 @@ this.selected = object;
             // var plane = new THREE.Mesh( planeGeometry, planeMaterial );
             // plane.rotateX(Math.PI / 2);
             // this.scene.add( plane );
-            const loader = new ImageBitmapLoader();
-            loader.load(BgImg, imageBitMap => {
-                console.log(imageBitMap);
-                var texture = new CanvasTexture( imageBitMap );
-                var material = new MeshBasicMaterial( { map: texture } );
-                var planeGeometry = new PlaneGeometry( imageBitMap.width, imageBitMap.height, 1, 1);
-                var plane = new Mesh( planeGeometry, material );
-                this.scene.add( plane );
-            });
+
+            // const loader = new ImageBitmapLoader();
+            // loader.load(BgImg, imageBitMap => {
+            //     console.log(imageBitMap);
+            //     var texture = new CanvasTexture( imageBitMap );
+            //     var material = new MeshBasicMaterial( { map: texture } );
+            //     var planeGeometry = new PlaneGeometry( imageBitMap.width, imageBitMap.height, 1, 1);
+            //     var plane = new Mesh( planeGeometry, material );
+            //     this.scene.add( plane );
+            // });
             // this.scene.rotateX(Math.PI / 2);
             this.scene.add(new AxesHelper(Math.max(clientHeight, clientWidth)));
             // 增加网格辅助线
-            const gridHelper = new GridHelper( 10, 10, 0x444444, 0x888888 );
+            const gridHelper = new GridHelper( Math.max(clientHeight, clientWidth), 100, 0x444444, 0x888888 );
             gridHelper.rotateX(Math.PI / 2);
             this.scene.add(gridHelper);
             this.orbitControls = new OrbitControls(this.camera, this.containerRef.current);
             // this.orbitControls = new MapControls(this.camera, this.containerRef.current);
             this.orbitControls.addEventListener('change', () => {
                 console.log('aaa');
+                console.log(this.camera.zoom);
             });
             // this.orbitControls.enableRotate = false;
             this.resetControlsRotateAngle(this.orbitControls);
@@ -198,10 +200,12 @@ this.selected = object;
                 filter(() => this.draw),
                 distinct(event => event.clientX + ':' + event.clientY, getDrawSignal()),
                 map(event => {
-                    const { x, y } = transformCoordinateSys(event, this.canvasRef.current);
+                    const { x, y, positionX, positionY } = transformCoordinateSys(event, this.canvasRef.current);
                     const vector = new Vector3(x, y, 0);
                     // console.log(vector);
                     vector.unproject(this.camera);
+                    vector.positionX = positionX;
+                    vector.positionY = positionY;
                     // console.log(this.camera.projectionMatrixInverse)
                     // console.log(this.camera.matrixWorld)
                     return vector;
@@ -227,8 +231,15 @@ this.selected = object;
                     this.scene.remove(this.drawObj);
                 }
                 if (this.drawPath.length >= 2) {
-                    const line = new Line3(this.drawPath[0], this.drawPath[1]);
-                    console.log(line.distance());
+                    // const line = new Line3(this.drawPath[0], this.drawPath[1]);
+                    // const center = new Vector3();
+                    // center.add(this.drawPath[0]).add(this.drawPath[1]).divideScalar(2);
+                    // console.log(center);
+                    // const width = Math.abs(this.drawPath[0].x - this.drawPath[1].x);
+                    // const height = Math.abs(this.drawPath[0].y - this.drawPath[1].y);
+                    // console.log('width:', width);
+                    // console.log('height:', height);
+                    // console.log(line.distance());
                     const path = new Shape();
                     path.moveTo(this.drawPath[0].x, this.drawPath[0].y, this.drawPath[0].z);
                     path.lineTo(this.drawPath[1].x, this.drawPath[0].y, this.drawPath[0].z);
@@ -238,6 +249,14 @@ this.selected = object;
                     this.drawObj = new Mesh(new ShapeBufferGeometry(path, 1), this.meshBasicMaterial.clone());
                     this.drawObj.translateZ(this.drawPath[0].z);
                     this.scene.add(this.drawObj);
+
+                    // box
+                    // this.drawObj = new Mesh(new BoxGeometry(width, height, 1), this.meshBasicMaterial.clone());
+                    // // this.drawObj.translate(center.x, center.y);
+                    // this.scene.add(this.drawObj);
+                    // console.log(this.drawObj);
+
+
                     // const rectObj = new ExtrudeBufferGeometry(path, { 	steps: 2,
                     //     depth: 16,
                     //     bevelEnabled: true,
@@ -278,6 +297,22 @@ this.selected = object;
                 }
                 break;
             case 'circle':
+                if (this.drawObj) {
+                    this.scene.remove(this.drawObj);
+                }
+                if (this.drawPath.length >= 2) {
+                    const path = new Shape();
+                    path.moveTo(this.drawPath[0].x, this.drawPath[0].y, this.drawPath[0].z);
+                    const a = new Vector2(this.drawPath[0].positionX, this.drawPath[0].positionY);
+                    const b = new Vector2(this.drawPath[1].positionX, this.drawPath[1].positionY);
+                    console.log(a);
+                    console.log(b);
+                    console.log(a.distanceTo(b));
+                    path.absarc(this.drawPath[0].x, this.drawPath[0].y, a.distanceTo(b), 0, 2* Math.PI)
+                    this.drawObj = new Mesh(new ShapeBufferGeometry(path), this.meshBasicMaterial.clone());
+                    this.drawObj.translateZ(this.drawPath[0].z);
+                    this.scene.add(this.drawObj);
+                }
                 break;
             default:
                 break;

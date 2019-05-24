@@ -23,8 +23,8 @@ export function transformCoordinateSys(evt: {clientX: number, clientY: number}, 
     const height = offsetParentRect.height || offsetParentRect.bottom - offsetParentRect.top;
     const positionX = evt.clientX + offsetParent.scrollLeft - offsetParentRect.left;
     const positionY = evt.clientY + offsetParent.scrollTop - offsetParentRect.top;
-    const x = (positionX / width * 2 - 1) * width / 2;
-    const y = (-positionY / height * 2 + 1) * height / 2;
+    const x = (positionX / width * 2 - 1);
+    const y = (-positionY / height * 2 + 1);
     console.log('x:', evt.clientX + offsetParent.scrollLeft - offsetParentRect.left);
     console.log('y:', evt.clientY + offsetParent.scrollTop - offsetParentRect.top);
     console.log('width:', width);
