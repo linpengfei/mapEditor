@@ -6,7 +6,7 @@
 import React, {Component} from 'react';
 import "./index.scss";
 import {bindCallback, Observable, Subscription, pipe} from "rxjs";
-import { Menu, Icon, Collapse } from 'antd';
+import { Menu, Icon, Collapse, Button } from 'antd';
 import { sendDrawSignal } from "./DrawSinglServer";
 const { Panel } = Collapse;
 type Props = {};
@@ -30,7 +30,7 @@ export default class ActionPlane extends Component<Props, State> {
             return;
         }
         this.setState({ drawShape: type }, () => {
-            sendDrawSignal({ type: 'draw', data: { drawShape: this.state.drawShape }});
+            sendDrawSignal({ type: this.state.drawShape ? 'draw' : 'undraw', data: { drawShape: this.state.drawShape }});
         });
     };
     render() {
@@ -66,6 +66,7 @@ export default class ActionPlane extends Component<Props, State> {
                         <div className="drawItem">
                             <span>高度</span>
                         </div>
+                        <Button onClick={() => this.selectSquare()}>取消</Button>
                     </div>
                 </Panel>
             </Collapse>

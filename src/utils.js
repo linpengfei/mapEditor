@@ -25,11 +25,5 @@ export function transformCoordinateSys(evt: {clientX: number, clientY: number}, 
     const positionY = evt.clientY + offsetParent.scrollTop - offsetParentRect.top;
     const x = (positionX / width * 2 - 1);
     const y = (-positionY / height * 2 + 1);
-    console.log('x:', evt.clientX + offsetParent.scrollLeft - offsetParentRect.left);
-    console.log('y:', evt.clientY + offsetParent.scrollTop - offsetParentRect.top);
-    console.log('width:', width);
-    console.log('height:', height);
-    console.log('x1:', x);
-    console.log('y1:', y);
     return { x, y, positionX, positionY }
 }

@@ -7,6 +7,7 @@ import React, {Component} from 'react';
 import { Layout, Menu, Icon, Dropdown } from 'antd';
 import Sketchpad from './Sketchpad';
 import ActionPlane from './actionPlane';
+import InfoPlane from './infoPlane';
 import { sendActionSignal, getActionSignal } from "./SignalService";
 const { Sider, Content, Header } = Layout;
 const { SubMenu, ItemGroup: MenuItemGroup, Divider } = Menu;
@@ -33,7 +34,7 @@ export default class MapEditor extends Component<Props, State> {
                 <Sketchpad />
             </div>
             <div className="infoWindow">
-                cc
+                <InfoPlane />
             </div>
         </div>
     }
