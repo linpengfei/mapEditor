@@ -9,6 +9,10 @@ type data = {
     type: string,
     points: Array,
     uuid: string,
+    height?: number,
+    z?: number,
+    radius?: number,
+    img?: number,
 }
 const infoSubject = new Subject<data>();
 const valueSetSubject = new Subject<data>();

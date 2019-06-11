@@ -3,6 +3,7 @@
  * @flow
  *
  **/
+import Mark from './assets/img/pointMark.svg';
 export function getOffsetOfEvent(evt: {clientX: number, clientY: number}, offsetParent: HTMLElement): { x: number, y: number } {
     const isBody = offsetParent === offsetParent.ownerDocument.body
 
@@ -26,4 +27,22 @@ export function transformCoordinateSys(evt: {clientX: number, clientY: number}, 
     const x = (positionX / width * 2 - 1);
     const y = (-positionY / height * 2 + 1);
     return { x, y, positionX, positionY }
+}
+const canvas = document.createElement('canvas');
+canvas.width = 256;
+canvas.height = 256;
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+const image = new Image();
+image.src = Mark;
+export function generateTextMark(text) {
+    ctx.clearRect(0,0,256,256);
+    ctx.drawImage(image, 96, 0, 64, 64);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    // TODO 后期需要根据文字宽度进行分行显示
+    ctx.fillStyle = '#2e8eff';
+    ctx.font = "900 56px serif";
+    ctx.fillText(text, 128, 128, 256);
+    return canvas;
 }

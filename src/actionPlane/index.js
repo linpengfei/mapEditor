@@ -8,6 +8,7 @@ import "./index.scss";
 import {bindCallback, Observable, Subscription, pipe} from "rxjs";
 import { Menu, Icon, Collapse, Button } from 'antd';
 import { sendDrawSignal } from "./DrawSinglServer";
+import Mark from '../assets/img/pointMark.svg';
 const { Panel } = Collapse;
 type Props = {};
 type State = {
@@ -24,13 +25,13 @@ export default class ActionPlane extends Component<Props, State> {
             drawShape: null,
         };
     }
-    selectSquare = (type: string) => {
+    selectSquare = (type: string, img) => {
         console.log(type);
         if (type === this.state.drawShape) {
             return;
         }
         this.setState({ drawShape: type }, () => {
-            sendDrawSignal({ type: this.state.drawShape ? 'draw' : 'undraw', data: { drawShape: this.state.drawShape }});
+            sendDrawSignal({ type: this.state.drawShape ? 'draw' : 'undraw', data: { drawShape: this.state.drawShape, img }});
         });
     };
     render() {
@@ -46,6 +47,14 @@ export default class ActionPlane extends Component<Props, State> {
                 <Panel header={<div>
                     <><i className="mapEditor mapts-focus-point" />标记点</>
                 </div>} key="poi">
+                    <div className="drawContainer">
+                        <div className="drawItem">
+                            <span>标记</span>
+                            <div className="squareContainers">
+                                <i className={`mapEditor mapts-focus-point${drawShape === 'mark' ? ' select' : ''}`} title="放置标记" onClick={() => this.selectSquare('mark', Mark)}/>
+                            </div>
+                        </div>
+                    </div>
                 </Panel>
                 <Panel header={<div>
                     <><i className="mapEditor map-graphics-editor" />绘制元素</>
