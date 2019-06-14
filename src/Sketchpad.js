@@ -74,6 +74,7 @@ type State = {};
 const extrudeSettings = {
     steps: 1,
     depth: 100,
+    curveSegments: 100,
     bevelEnabled: true,
 };
 export default class Sketchpad extends Component<Props, State> {
@@ -364,7 +365,7 @@ export default class Sketchpad extends Component<Props, State> {
                 object2d = new Mesh(new ShapeBufferGeometry(path), this.meshBasicMaterial);
                 break;
             case 'circle':
-                object2d = new Mesh(new ShapeBufferGeometry(path, 100), this.meshBasicMaterial);
+                object2d = new Mesh(new ShapeBufferGeometry(path, 500), this.meshBasicMaterial);
                 break;
             case 'mark':
                 const texture = new Texture(generateTextMark('hello', this.markImg));
