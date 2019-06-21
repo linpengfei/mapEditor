@@ -172,7 +172,7 @@ export default class Sketchpad extends Component<Props, State> {
         // this.camera = this.DEFAULT_CAMERA.clone();Vec
         if (canvas) {
             const { clientHeight, clientWidth } = canvas;
-            const perspective = 800;
+            const perspective = 500;
             const fov = 180 * ( 2 * Math.atan( clientHeight / 2 / perspective ) ) / Math.PI;
             // this.camera = new PerspectiveCamera(100, clientWidth / clientHeight, 1, 1000);
             // this.camera = new PerspectiveCamera( fov, clientWidth / clientHeight, 1, 10000 );
@@ -219,11 +219,21 @@ export default class Sketchpad extends Component<Props, State> {
             this.orbitControls.addEventListener('change', () => {
                 // console.log('aaa');
                 console.log(this.camera.zoom);
+                // 获取中心点实际位置
+                const worldVector = new Vector3(0,0,0);
+                const stadnardVector = worldVector.project(this.camera);
+                const a = this.canvasRef.current.clientWidth / 2;
+                const b = this.canvasRef.current.clientHeight / 2;
+                let x = Math.round(stadnardVector.x * a + a);
+                let y = Math.round(-stadnardVector.y * b + b);
+                console.log('x:', x, ' y:', y);
             });
             // this.orbitControls.enableRotate = false;
             this.resetControlsRotateAngle(this.orbitControls);
+            this.renderer.gammaOutput = true;
+            this.renderer.gammaFactor = 2.2;
             this.renderer.setSize(clientWidth, clientHeight);
-            this.renderer.setClearColor(new Color(0xEEEEEE));
+            this.renderer.setClearColor(new Color(0x000000));
             this.renderer.render(this.scene, this.camera);
             this.animate();
             this.subscribeSingle();

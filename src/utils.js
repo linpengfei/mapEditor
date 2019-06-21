@@ -43,6 +43,6 @@ export function generateTextMark(text) {
     // TODO 后期需要根据文字宽度进行分行显示
     ctx.fillStyle = '#2e8eff';
     ctx.font = "900 56px serif";
-    ctx.fillText(text, 128, 128, 256);
+    ctx.fillText(text + new Date().getTime(), 128, 128, 256);
     return canvas;
 }
