@@ -68,28 +68,24 @@ import BgImg from './assets/img/zoneFloor.png';
 import fontData from './assets/font/helvetiker_regular.typeface';
 import {Subscription, fromEvent, partition} from "rxjs";
 import { map, filter, distinct } from 'rxjs/operators';
-import { transformCoordinateSys, generateTextMark } from './utils';
+import { transformCoordinateSys, generateTextMark, saveArrayBuffer, saveString, generatePath } from './utils';
+import { Upload, message, Button, Icon } from 'antd';
 type Props = {};
 type State = {};
 const extrudeSettings = {
     steps: 1,
     depth: 100,
     curveSegments: 100,
-    bevelEnabled: true,
+    bevelEnabled: false,
 };
 export default class Sketchpad extends Component<Props, State> {
     static defaultProps = {};
     containerRef: Object;
     canvasRef: Object;
-    cameraControls: Object;
     scene: Object;
     sceneHelpers: Object;
     camera: Object;
-    DEFAULT_CAMERA: Object;
     object: Object;
-    geometries: Object;
-    materials: Object;
-    textures: Object;
     animations: Object;
     selected: Object;
     helpers: Object;
@@ -105,11 +101,11 @@ export default class Sketchpad extends Component<Props, State> {
     zBase: number;
     markImg: Object;
     font: Object;
+    imgLoader: Object;
 
 
     group3D: Object;
     group3DMap: Map;
-    group2D: Object;
     selectObject: Object;
 
 
@@ -119,18 +115,11 @@ export default class Sketchpad extends Component<Props, State> {
     actionSignalSub: Subscription;
     drawSignalSub: Subscription;
     eventSub: Subscription;
+    scentSize: Object; // 场景尺寸
+    drawData: Object; // 绘图数据
     constructor(props) {
         super(props);
-        this.DEFAULT_CAMERA = new PerspectiveCamera( 50, 1, 0.01, 1000 );
-        this.DEFAULT_CAMERA.name = 'Camera';
-        this.DEFAULT_CAMERA.position.set( 0, 0, 30 );
-        this.DEFAULT_CAMERA.lookAt( new Vector3() );
-
         this.object = {};
-        this.geometries = {};
-        this.materials = {};
-        this.textures = {};
-        this.scripts = {};
 
         this.animations = {};
         this.selected = null;
@@ -144,11 +133,9 @@ export default class Sketchpad extends Component<Props, State> {
         this.scene = new Scene();
         this.scene.name = 'Scene';
         this.scene.background = new Color( 0xaaaaaa );
-        // 不同视图对象分组，默认处于3d模式，绘制时切换至2d
-        this.group2D = new Group();
+        this.scentSize = {};
         this.group3D = new Group();
         this.group3DMap = new Map<string, string>();
-        // this.scene.add(this.group2D);
         this.scene.add(this.group3D);
         this.sceneHelpers = new Scene();
 
@@ -169,19 +156,15 @@ export default class Sketchpad extends Component<Props, State> {
     }
     componentDidMount() {
         const canvas = this.canvasRef.current;
-        // this.camera = this.DEFAULT_CAMERA.clone();Vec
         if (canvas) {
             const { clientHeight, clientWidth } = canvas;
+            this.scentSize = { width: clientWidth, height: clientHeight };
             const perspective = 500;
-            const fov = 180 * ( 2 * Math.atan( clientHeight / 2 / perspective ) ) / Math.PI;
-            // this.camera = new PerspectiveCamera(100, clientWidth / clientHeight, 1, 1000);
-            // this.camera = new PerspectiveCamera( fov, clientWidth / clientHeight, 1, 10000 );
             this.camera = new OrthographicCamera(-clientWidth/2 , clientWidth/2, clientHeight/2, -clientHeight / 2, 0.01, 100000);
             this.camera.name = 'Camera';
             this.camera.position.set( 0, 0, perspective );
             this.camera.lookAt( new Vector3() );
-            this.light = new DirectionalLight();
-            this.light.castShadow = true;
+            this.light = new DirectionalLight(0xffffff, 1);
             this.light.position.set(-1, -1, 1);
             this.scene.add(this.light);
             this.raycaster = new Raycaster();
@@ -194,41 +177,16 @@ export default class Sketchpad extends Component<Props, State> {
             }
             this.renderer.setClearColor(0x000000);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            // 开启阴影
-            this.renderer.shadowMap.enabled = true;
 
-            const loader = new ImageBitmapLoader();
-            loader.load(BgImg, imageBitMap => {
-                const texture = new CanvasTexture( imageBitMap );
-                const material = new MeshBasicMaterial( { map: texture } );
-                const planeGeometry = new PlaneGeometry( imageBitMap.width, imageBitMap.height, 1, 1);
-                const plane = new Mesh( planeGeometry, material );
-                plane.position.setZ(0);
-                // 投射阴影
-                plane.receiveShadow = true;
-                this.scene.add( plane );
-            });
-            // this.scene.rotateX(Math.PI / 2);
+            this.imgLoader = new ImageBitmapLoader();
+            // this.loaderImg(BgImg);
             this.scene.add(new AxesHelper(Math.max(clientHeight, clientWidth)));
             // 增加网格辅助线
             const gridHelper = new GridHelper( Math.max(clientHeight, clientWidth), 100, 0x444444, 0x888888 );
             gridHelper.rotateX(Math.PI / 2);
             this.scene.add(gridHelper);
             this.orbitControls = new OrbitControls(this.camera, this.containerRef.current);
-            // this.orbitControls = new MapControls(this.camera, this.containerRef.current);
-            this.orbitControls.addEventListener('change', () => {
-                // console.log('aaa');
-                console.log(this.camera.zoom);
-                // 获取中心点实际位置
-                const worldVector = new Vector3(0,0,0);
-                const stadnardVector = worldVector.project(this.camera);
-                const a = this.canvasRef.current.clientWidth / 2;
-                const b = this.canvasRef.current.clientHeight / 2;
-                let x = Math.round(stadnardVector.x * a + a);
-                let y = Math.round(-stadnardVector.y * b + b);
-                console.log('x:', x, ' y:', y);
-            });
-            // this.orbitControls.enableRotate = false;
+            this.orbitControls.screenSpacePanning = true;
             this.resetControlsRotateAngle(this.orbitControls);
             this.renderer.gammaOutput = true;
             this.renderer.gammaFactor = 2.2;
@@ -275,58 +233,96 @@ export default class Sketchpad extends Component<Props, State> {
             ).subscribe(this.handleDrawMouseMove));
             this.eventSub.add(getValueSet().subscribe(this.changeObject));
         }
-        window.exportGltf = () => {
-            const exporter = new GLTFExporter();
-            exporter.parse(this.scene, function (gltf) {
-                console.log(gltf);
-                // downloadJSON
-            })
-        }
+        console.log(this.renderer);
     }
-    changeObject = data => {
-        console.log(data);
+    loaderImg = img => {
+        const basePlane = this.scene.getObjectByName('baseMapPlane');
+        if (basePlane) {
+            this.scene.remove(basePlane);
+            basePlane.material.dispose();
+            basePlane.geometry.dispose();
+            basePlane.material.map.dispose();
+        }
+        this.imgLoader && this.imgLoader.load(img, imageBitMap => {
+            const texture = new CanvasTexture( imageBitMap );
+            const material = new MeshBasicMaterial( { map: texture } );
+            const { width, height } = imageBitMap;
+            this.scentSize = { width, height };
+            const planeGeometry = new PlaneGeometry( width, height, 1, 1);
+            const plane = new Mesh( planeGeometry, material );
+            plane.position.setZ(0);
+            plane.rotateZ(Math.PI);
+            plane.name = 'baseMapPlane';
+            this.scene.add( plane );
+        });
+    };
+    exportGltf = () => {
+        const exporter = new GLTFExporter();
+        exporter.parse(this.group3D, gltf => {
+            console.log(gltf);
+            gltf.asset.sceneSize = this.scentSize;
+            if ( gltf instanceof ArrayBuffer ) {
+                saveArrayBuffer( gltf, 'scene.glb' );
+            } else {
+                var output = JSON.stringify( gltf, null, 2 );
+                console.log( output );
+                saveString( output, 'scene.gltf' );
+            }
+        });
+    };
+    changeObject = changeData => {
+        console.log(changeData);
+        const { type: actionType, data } = changeData;
         const { uuid, type, points, radius, height, z } = data;
         // const path = this.generatePath(type, points);
         const itemUuid = this.group3DMap.get(uuid);
         const item = this.group3D.getObjectByProperty('uuid', itemUuid);
-        console.log(item);
-        // return false;
-        this.group3D.remove(item);
-        // item.dispose();
-        item.geometry.dispose();
-        // item.geometry = new ExtrudeBufferGeometry(path, extrudeSettings);
-        const object = this.drawGraph(type, points, { height, z, radius});
-        console.log(object);
-        object.object3d.castShadow = true;
-        object.object3d.material = item.material;
-        object.object3d.userData.uuid = uuid;
-        this.group3D.add(object.object3d);
-        this.group3DMap.set(uuid, object.object3d.uuid);
+        if (actionType === 'modify') {
+            if (type !== 'mark') {
+                this.group3D.remove(item);
+                item.geometry.dispose();
+                const object = this.drawGraph(type, points, { height, z, radius});
+                object.castShadow = true;
+                object.material = item.material;
+                object.userData.uuid = uuid;
+                this.group3D.add(object);
+                this.group3DMap.set(uuid, object.uuid);
+            } else {
+                item.userData = { ...item.userData, ...data };
+                item.position.set(points[0].x, points[0].y, z);
+                generateTextMark(data, item.material.map.image);
+                item.material.map.needsUpdate = true;
+            }
+        } else if(actionType === 'delete') {
+            item.geometry && item.geometry.dispose();
+            if (type === 'mark') {
+                item.material.map && item.material.dispose();
+            }
+            this.group3D.remove(item);
+            sendInfoData({})
+        }
+
+
     };
     getSelectObject = point => {
         this.raycaster.setFromCamera(point, this.camera);
         const intersects = this.raycaster.intersectObjects(this.group3D.children);
         if (intersects.length) {
             const [select] = intersects;
-            // 标记点暂不选中
-            if (select.object.isSprite) {
-                return;
-            }
-            console.log(select);
-            for (const x of this.group3D.children) {
-                console.log(x.material === this.meshBasicMaterial);
-                if (x.material !== this.meshBasicMaterial && !x.isSprite) {
-                    x.material.dispose();
-                    x.material = this.meshBasicMaterial;
+            if (!select.object.isSprite) {
+                for (const x of this.group3D.children) {
+                    console.log(x.material === this.meshBasicMaterial);
+                    if (x.material !== this.meshBasicMaterial && !x.isSprite) {
+                        x.material.dispose();
+                        x.material = this.meshBasicMaterial;
+                    }
                 }
-                console.log(this.renderer.info);
+                this.select(select.object);
+            } else {
+                this.selectObject = select.object;
             }
-            this.select(select.object);
-            // select.object.material = this.meshBasicMaterial.clone();
-            // select.object.material.color = new Color(0xff0000);
             sendInfoData(select.object.userData);
         }
-        console.log(intersects);
     };
     select = (object) => {
         this.selectObject = object;
@@ -355,105 +351,23 @@ export default class Sketchpad extends Component<Props, State> {
     };
     // z 设置为5跟平面对齐
     drawGraph = (drawShape, drawPath, para = { height: 100, z: 0, radius: null, }) => {
-        let object2d = null, object3d = null;
-        const path = this.generatePath(drawShape, drawPath, para.radius );
-        switch (drawShape) {
-            case 'line':
-                // 2d
-                object2d = new Line(new BufferGeometry(), this.lineBasicMaterial);
-                drawPath[0].z = 0;
-                drawPath[1] && (drawPath[1].z = 0);
-                object2d.geometry.setFromPoints(drawPath);
-                object2d.geometry.verticesNeedUpdate = true;
-                // 3d
-                break;
-            case 'rect':
-                object2d = new Mesh(new ShapeBufferGeometry(path, 1), this.meshBasicMaterial);
-                console.log(object3d);
-                break;
-            case 'polygon':
-                object2d = new Mesh(new ShapeBufferGeometry(path), this.meshBasicMaterial);
-                break;
-            case 'circle':
-                object2d = new Mesh(new ShapeBufferGeometry(path, 500), this.meshBasicMaterial);
-                break;
-            case 'mark':
-                const texture = new Texture(generateTextMark('hello', this.markImg));
-                texture.needsUpdate = true;
-                console.log(texture);
-                const mark = new Sprite(new SpriteMaterial({ map: texture, color: 0xffffff }));
-                mark.position.copy(this.drawPath[0]);
-                mark.position.setZ(this.zBase + 10);
-                mark.scale.set(70,70,1);
-                // const textGeo = new TextBufferGeometry('123', {
-                //     font: this.font,
-                //     size: 0.5,
-                //     height: 0.5,
-                //     curveSegments: 12,
-                // });
-                // const text = new Mesh(textGeo, this.meshBasicMaterial);
-                // text.position.set(-0.5,1,0);
-                // console.log(mark);
-                // mark.add(text);
-                object3d = mark;
-                object2d = mark.clone(true);
-                console.log(object2d);
-                break;
-            default:
-                break;
-        }
+        let object3d = null;
+        const depth = parseFloat( para.height || para.height === 0 ? 0 : 100 || 100);
         if (drawShape !== 'mark') {
-            object3d = new Mesh(new ExtrudeBufferGeometry(path, { ...extrudeSettings, depth: parseFloat(para.height) + this.zBase }), this.meshBasicMaterial);
+            const path = generatePath(drawShape, drawPath, para.radius, this.camera.zoom );
+            object3d = new Mesh(new ExtrudeBufferGeometry(path, { ...extrudeSettings, depth }), this.meshBasicMaterial);
             object3d.position.setZ(parseFloat(para.z || 0));
+            object3d.userData = { type: drawShape, points: drawPath.slice(), radius: path.radius, z: object3d.position.z, height: depth };
+        } else {
+            const mark = { content: '', width: 64, height: 50, placement: '', z: 50 };
+            const texture = new Texture(generateTextMark(mark));
+            texture.needsUpdate = true;
+            object3d = new Sprite(new SpriteMaterial({ map: texture, color: 0xffffff, transparent:true, depthTest: false }));
+            object3d.position.copy(this.drawPath[0]);
+            object3d.scale.set(mark.width, mark.height,1);
+            object3d.userData = { ...mark, type: drawShape, points: drawPath };
         }
-        object3d.castShadow = true;
-        console.log(object3d);
-        object3d.userData = { type: drawShape, points: this.drawPath.slice(), ...para, radius: parseFloat(path.radius) };
-        return { object2d, object3d };
-    };
-
-    generatePath = (drawShape, drawPath, radius) => {
-        const path = new Shape();
-        switch (drawShape) {
-            case 'line':
-                // 3d
-                path.moveTo(drawPath[0].x, drawPath[0].y, 0);
-                path.lineTo(drawPath[1].x, drawPath[1].y, 0);
-                // object3d = new Mesh(new ExtrudeGeometry(pathLine,  extrudeSettings), this.meshBasicMaterial.clone());
-                // object3d.userData = { type: 'line', points: this.drawPath.slice(0, 2), uuid: object3d.uuid };
-                break;
-            case 'rect':
-                path.moveTo(drawPath[0].x, drawPath[0].y, 0);
-                path.lineTo(drawPath[1].x, drawPath[0].y, 0);
-                path.lineTo(drawPath[1].x, drawPath[1].y, 0);
-                path.lineTo(drawPath[0].x, drawPath[1].y, 0);
-                path.lineTo(drawPath[0].x, drawPath[0].y, 0);
-                // object2d = new Mesh(new ShapeBufferGeometry(pathRect, 1), this.meshBasicMaterial.clone());
-                // object3d = new Mesh(new ExtrudeGeometry(pathRect, extrudeSettings), this.meshBasicMaterial.clone());
-                // object3d.userData = { type: 'rect', points: this.drawPath.slice(0, 2), uuid: object3d.uuid };
-                break;
-            case 'polygon':
-                path.moveTo(drawPath[0].x, drawPath[0].y,0);
-                for (let i = 1; i< drawPath.length && i < 19; i++) {
-                    path.lineTo(drawPath[i].x, drawPath[i].y,0);
-                }
-                path.lineTo(drawPath[0].x, drawPath[0].y,0);
-                // object2d = new Mesh(new ShapeBufferGeometry(pathPolygon), this.meshBasicMaterial.clone());
-                // object3d= new Mesh(new ExtrudeGeometry(pathPolygon, extrudeSettings), this.meshBasicMaterial.clone());
-                // object3d.userData = { type: 'polygon', points: this.drawPath.slice(), uuid: object3d.uuid };
-                break;
-            case 'circle':
-                path.moveTo(drawPath[0].x, drawPath[0].y,0);
-                const a = new Vector2(drawPath[0].positionX, drawPath[0].positionY);
-                const b = new Vector2(drawPath[1].positionX, drawPath[1].positionY);
-                const radiusTemp = parseFloat(radius || a.distanceTo(b) / this.camera.zoom);
-                path.absarc(drawPath[0].x, drawPath[0].y, radiusTemp, 0, 2* Math.PI);
-                path.radius = radiusTemp;
-                break;
-            default:
-                break;
-        }
-        return path;
+        return object3d;
     };
 
     handleDrawClick = point => {
@@ -461,7 +375,6 @@ export default class Sketchpad extends Component<Props, State> {
         this.completeDraw();
     };
     handleDrawMouseMove = point => {
-        console.log('387');
         if (!this.drawPath.length) {
             return;
         }
@@ -469,20 +382,24 @@ export default class Sketchpad extends Component<Props, State> {
         tempPath.push(point);
         if (this.drawObj) {
             this.scene.remove(this.drawObj);
+            this.drawObj.geometry.dispose();
         }
-        this.drawObj = this.drawGraph(this.drawShape, tempPath).object2d;
+        this.drawObj = this.drawGraph(this.drawShape, tempPath);
         this.scene.add(this.drawObj);
     };
     completeDraw = (mask = false)=> {
         if (this.isComplete(mask)) {
-            const object = this.drawGraph(this.drawShape, this.drawPath);
-            this.group2D.add(object.object2d);
+            if (this.drawObj) {
+                this.scene.remove(this.drawObj);
+                this.drawObj.geometry.dispose();
+            }
+            const object = this.drawGraph(this.drawShape, this.drawPath, this.drawData);
             const uuid = _Math.generateUUID();
-            object.object3d.userData.uuid = uuid;
+            object.userData.uuid = uuid;
             // object.object3d.userData.height = object.object3d.geometry.parameters.depth;
             // object.object3d.userData.z = object.object3d.position.z;
-            this.group3D.add(object.object3d);
-            this.group3DMap.set(uuid, object.object3d.uuid);
+            this.group3D.add(object);
+            this.group3DMap.set(uuid, object.uuid);
             this.drawPath = [];
         }
     };
@@ -503,8 +420,7 @@ export default class Sketchpad extends Component<Props, State> {
         if (type === 'draw') {
             this.unselect();
             this.draw = true;
-            this.scene.add(this.group2D);
-            this.scene.remove(this.group3D);
+            this.drawData = data;
             this.orbitControls.enableRotate = false;
             // this.orbitControls.enabled = false;
             this.orbitControls.maxPolarAngle = this.orbitControls.minPolarAngle = Math.PI / 2;
@@ -514,8 +430,6 @@ export default class Sketchpad extends Component<Props, State> {
             if (this.drawObj) {
                 this.scene.remove(this.drawObj);
             }
-            this.scene.remove(this.group2D);
-            this.scene.add(this.group3D);
             this.orbitControls.enableRotate = true;
             this.orbitControls.maxPolarAngle =Math.PI;
                 this.orbitControls.minPolarAngle = 0;
@@ -551,11 +465,28 @@ export default class Sketchpad extends Component<Props, State> {
         this.orbitControls.update();
         this.renderer.render(this.scene, this.camera);
     };
+    onMapChange = file => {
+        console.log(file);
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            this.loaderImg(reader.result);
+        });
+        reader.readAsDataURL(file);
+        return false;
+    };
     render() {
         return <div ref={this.containerRef} className="sketchpadContainers">
             <canvas ref={this.canvasRef} className="canvasContent">
                 Please use browser support canvas!
             </canvas>
+            <button onClick={this.exportGltf} className="exportButton">export</button>
+            <div className="uploadMap">
+                <Upload name="file" beforeUpload={this.onMapChange} showUploadList={false}>
+                    <Button>
+                        <Icon type="upload" /> 上传底图
+                    </Button>
+                </Upload>
+            </div>
         </div>;
     }
 }

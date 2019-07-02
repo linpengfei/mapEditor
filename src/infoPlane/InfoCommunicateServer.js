@@ -14,8 +14,12 @@ type data = {
     radius?: number,
     img?: number,
 }
+type changeData = {
+    type: 'modify' | 'delete',
+    data: data,
+}
 const infoSubject = new Subject<data>();
-const valueSetSubject = new Subject<data>();
+const valueSetSubject = new Subject<changeData>();
 export function sendInfoData(actionData: data) {
     console.log(actionData);
     infoSubject.next(actionData);
@@ -27,7 +31,7 @@ export function getInfoData(): Observer {
     );
 }
 
-export function sendValueSet(value: data) {
+export function sendValueSet(value: changeData) {
     console.log('valueSet:', value);
     valueSetSubject.next(value);
 }

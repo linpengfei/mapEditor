@@ -4,10 +4,11 @@
  *
  **/
 import React, {Component} from 'react';
-import { Input } from 'antd';
+import { Input, Select } from 'antd';
 import './index.scss';
 import { getInfoData, sendValueSet } from "./InfoCommunicateServer";
 import { Subscription } from "rxjs";
+const { Option } = Select;
 type Props = {};
 type State = {
     visible: boolean,
@@ -51,6 +52,7 @@ export default class InfoPlane extends Component<Props, State> {
     }
     getInfo = data => {
         const { uuid } = data;
+        console.log(data);
         if (uuid) {
             this.setState({ ...data });
         } else {
@@ -58,28 +60,37 @@ export default class InfoPlane extends Component<Props, State> {
         }
     };
     onValueChange = (type, index, position, value) => {
-        const { points, uuid, type: oldType, z, height } = this.state;
-        const valueData = { uuid, points: points.slice(), type: type || oldType, z, height };
+        const { type: oldType } = this.state;
+        const valueData = { ...this.state, type: type || oldType };
         switch (type) {
             case 'line':
             case 'rect':
             case 'polygon':
             case 'circle':
-                valueData.points[index][position] = parseFloat(value);
+                valueData.points[index][position] = parseFloat(value) || 0;
+                break;
+            case 'mark':
+                if (index !== null) {
+                    valueData.points[index][position] = parseFloat(value) || 0;
+                } else {
+                    valueData[position] = value;
+                }
                 break;
             default:
-                valueData[position] = parseFloat(value);
+                valueData[position] = parseFloat(value) || 0;
                 break;
         }
-        sendValueSet(valueData);
-        console.log(valueData);
+        sendValueSet({ type: 'modify', data: valueData });
         this.setState({ ...valueData });
+    };
+    deleteObj = () => {
+        sendValueSet({ type: 'delete', data: { ...this.state }});
     };
     renderInfo = () => {
         let ret = <div>
             请点击选择物体!
         </div>;
-        const { type, uuid, points, height, z, radius } = this.state;
+        const { type, uuid, points, height, z, radius, content, width, placement } = this.state;
         switch (type) {
             case 'line':
             case 'rect':
@@ -107,6 +118,46 @@ export default class InfoPlane extends Component<Props, State> {
                             <Input value={radius} onChange={e => { this.onValueChange('', null, 'radius', e.target.value)}}/>
                         </div>
                     </div>
+                    <button onClick={this.deleteObj}>删除</button>
+                </div>;
+                break;
+            case 'mark':
+                ret = <div className="infoContainer">
+                    <div className="infoItem">
+                        <span>类型:标记</span>
+                    </div>
+                    <div className="infoItem">
+                        <div className="pointInfo">
+                            <span>位置:</span>
+                            <br/>
+                            <span>x:</span><Input value={points[0].x} onChange={e => { this.onValueChange(type, 0, 'x', e.target.value)}}/>
+                            <br/>
+                            <span>y:</span><Input value={points[0].y} onChange={e => { this.onValueChange(type, 0, 'y', e.target.value)}}/>
+                            <br/>
+                            <span>z:</span><Input value={z} onChange={e => { this.onValueChange(type, null, 'z', e.target.value)}}/>
+                        </div>
+                        <div className="pointInfo">
+                            <span>宽度:</span>
+                            <Input value={width} onChange={e => { this.onValueChange(type, null, 'width', parseFloat(e.target.value))}}/>
+                        </div>
+                        <div className="pointInfo">
+                            <span>高度:</span>
+                            <Input value={height} onChange={e => { this.onValueChange(type, null, 'height',parseFloat(e.target.value))}}/>
+                        </div>
+                        <div className="pointInfo">
+                            <span>内容:</span>
+                            <Input value={content} onChange={e => { this.onValueChange(type, null, 'content', e.target.value)}}/>
+                        </div>
+                        <div className="pointInfo">
+                            <span>文字位置:</span>
+                            <br/>
+                            <Select defaultValue={placement} name="placement" style={{ width: '100%' }} placeholder="请选择文字位置" onChange={value => { this.onValueChange(type, null, 'placement', value)}}>
+                                <Option value="top">上方</Option>
+                                <Option value="bottom">下方</Option>
+                            </Select>
+                        </div>
+                    </div>
+                    <button onClick={this.deleteObj}>删除</button>
                 </div>;
                 break;
             default:
@@ -139,6 +190,7 @@ export default class InfoPlane extends Component<Props, State> {
                     </div>
                 )}
             </div>
+            <button onClick={this.deleteObj}>删除</button>
         </div>;
     };
     render() {
