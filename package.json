@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "antd": "^3.18.2",
+    "@tweenjs/tween.js": "^17.4.0",
+    "antd": "^3.20.7",
+    "es6-tween": "^5.5.10",
     "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.11",
     "node-sass": "^4.12.0",
-    "react": "^16.8.4",
+    "react": "^16.9.0",
     "react-dnd": "^7.4.5",
     "react-dom": "^16.8.4",
     "react-redux": "^7.0.3",
@@ -17,7 +19,8 @@
     "redux-observable": "^1.1.0",
     "redux-thunk": "^2.3.0",
     "rxjs": "^6.5.1",
-    "three": "^0.105.2"
+    "stats.js": "^0.17.0",
+    "three": "^0.108.0"
   },
   "scripts": {
     "start": "react-scripts start",

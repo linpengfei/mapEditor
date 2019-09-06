@@ -5,56 +5,59 @@
  **/
 import React, {Component} from 'react';
 import {
-    WebGLRenderer,
-    PerspectiveCamera,
-    Vector3,
-    Scene,
-    Color,
-    AxesHelper,
-    GridHelper,
-    BoxGeometry,
-    MeshBasicMaterial,
-    Mesh,
-    Line3,
-    DoubleSide,
-    ImageBitmapLoader,
-    CanvasTexture,
-    PlaneGeometry,
-    Line,
-    Shape,
-    OrthographicCamera,
-    LineBasicMaterial,
-    Geometry,
-    BufferGeometry,
-    Path,
-    ShapeBufferGeometry,
-    ExtrudeBufferGeometry,
-    ShapePath,
-    Vector2,
-    Math as _Math,
-    CameraHelper,
-    ExtrudeGeometry,
-    Points,
-    PointsMaterial,
-    Group,
-    Raycaster,
-    TextureLoader,
-    SpriteMaterial,
-    Sprite,
-    TextGeometry,
-    Font,
-    TextBufferGeometry,
-    Texture,
-    DirectionalLight,
-    FrontSide,
-    MeshLambertMaterial,
-    DirectionalLightHelper,
-    MeshDepthMaterial,
-    MeshPhysicalMaterial,
-    Material,
-    MeshPhongMaterial,
-    PlaneBufferGeometry,
-    Object3D,
+  WebGLRenderer,
+  PerspectiveCamera,
+  Vector3,
+  Scene,
+  Color,
+  Box3,
+  AxesHelper,
+  GridHelper,
+  BoxGeometry,
+  MeshBasicMaterial,
+  Mesh,
+  Line3,
+  DoubleSide,
+  ImageBitmapLoader,
+  CanvasTexture,
+  PlaneGeometry,
+  Line,
+  Shape,
+  OrthographicCamera,
+  LineBasicMaterial,
+  Geometry,
+  BufferGeometry,
+  Path,
+  ShapeBufferGeometry,
+  ExtrudeBufferGeometry,
+  ShapePath,
+  Vector2,
+  Math as _Math,
+  CameraHelper,
+  ExtrudeGeometry,
+  Points,
+  PointsMaterial,
+  Group,
+  Raycaster,
+  TextureLoader,
+  SpriteMaterial,
+  Sprite,
+  TextGeometry,
+  Font,
+  TextBufferGeometry,
+  Texture,
+  DirectionalLight,
+  FrontSide,
+  MeshLambertMaterial,
+  DirectionalLightHelper,
+  MeshDepthMaterial,
+  MeshPhysicalMaterial,
+  Material,
+  MeshPhongMaterial,
+  PlaneBufferGeometry,
+  AnimationMixer,
+  Object3D,
+  Clock, AmbientLight, VectorKeyframeTrack, AnimationClip, LoopPingPong, AnimationAction, LoopRepeat,
 } from 'three';
 import WEBGL from './WebGL';
 import { sendActionSignal, getActionSignal } from "./SignalService";
@@ -63,13 +66,19 @@ import { sendInfoData, getValueSet } from "./infoPlane/InfoCommunicateServer";
 import { TransformControls } from './TransformControls';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
-import { MapControls } from 'three/examples/jsm/controls/MapControls';
+// import { MapControls } from 'three/examples/jsm/controls/MapControls';
 import BgImg from './assets/img/zoneFloor.png';
 import fontData from './assets/font/helvetiker_regular.typeface';
 import {Subscription, fromEvent, partition} from "rxjs";
 import { map, filter, distinct } from 'rxjs/operators';
 import { transformCoordinateSys, generateTextMark, saveArrayBuffer, saveString, generatePath } from './utils';
 import { Upload, message, Button, Icon } from 'antd';
+import {load3DSModel, loadGltfModel, loadObjModel} from './modelImport';
+import debounce from 'lodash/debounce';
+import Stats from 'stats.js';
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+import { Tween } from 'es6-tween';
+import {AnimationClipCreator} from "three/examples/jsm/animation/AnimationClipCreator";
 type Props = {};
 type State = {};
 const extrudeSettings = {
@@ -90,7 +99,9 @@ export default class Sketchpad extends Component<Props, State> {
     selected: Object;
     helpers: Object;
     light: Object;
-
+    mixer: Object; // 动画控制
+    clips: Object; // 帧控制
+    clock: Object; // 动画时钟
     // 绘制参数
     drawPath: Array;
     drawShape: string;
@@ -132,7 +143,8 @@ export default class Sketchpad extends Component<Props, State> {
         this.canvasRef = React.createRef();
         this.scene = new Scene();
         this.scene.name = 'Scene';
-        this.scene.background = new Color( 0xaaaaaa );
+        this.clock = new Clock();
+        // this.scene.background = new Color( 0xaaaaaa );
         this.scentSize = {};
         this.group3D = new Group();
         this.group3DMap = new Map<string, string>();
@@ -141,8 +153,8 @@ export default class Sketchpad extends Component<Props, State> {
 
     //   共用字体
         this.font = new Font(fontData);
-
-
+  
+        this.clock = new Clock();
 
     //    标记点图像
         this.markImg = null;
@@ -154,30 +166,105 @@ export default class Sketchpad extends Component<Props, State> {
         // this.meshBasicMaterial = new MeshBasicMaterial({ color: 0x696969,  depthTest: true, shadowSide: FrontSide, transparent: true });
         this.meshBasicMaterial = new MeshPhongMaterial( { color: 0x696969, flatShading: true } )
     }
+    initStats = () => {
+      this.stats = new Stats();
+      this.stats.showPanel(0);
+      this.stats.showPanel(2);
+      document.body.appendChild( this.stats.dom );
+    };
+    initPerspectiveCamera = (width: number, height: number) => {
+      this.camera = new PerspectiveCamera(45, width / height, 0.01, 10000);
+      this.camera.name = '透视相机';
+      this.camera.position.set(0,0,500);
+      this.camera.up = new Vector3(0,1,0);
+      this.camera.lookAt({ x: 0, y: 0, z: 0 });
+    };
+    initOrthographicCamera = (width: number, height: number, perspective = 500) => {
+      this.camera = new OrthographicCamera(-width/2 , width/2, height/2, -height / 2, 0.01, 100000);
+      this.camera.name = '正投影相机';
+      this.camera.position.set( 0, 0, perspective);
+      // this.camera.up = new Vector3(0,1,0);
+      this.camera.lookAt({ x: 0, y: 0, z: 0 });
+      console.log(this.camera);
+    };
+    initLight = () => {
+      this.light = new AmbientLight(0xffffff, 1);
+      // this.light.position.set(-1, -1, 1);
+    };
+    initModel = () => {
+      const loader = new GLTFLoader();
+      loader.load( 'http://127.0.0.1:1234/examples/models/gltf/RobotExpressive/RobotExpressive.glb', gltf =>  {
+        console.log(gltf);
+        gltf.scene.children[0].scale.set(50,50,50);
+        gltf.scene.children[0].position.setX(-900);
+        gltf.scene.children[0].rotateY(Math.PI / 4);
+        const position = gltf.scene.children[0].position;
+        // this.tween = new Tween(position).to({ x: 300, y: 0, z: 0 }, 2000).onUpdate(() => {
+        //   console.log(position);
+        // }).start();
+        // console.log(this.tween);
+        if (this.mixer) {
+          this.mixer.stopAllAction();
+          this.mixer.uncacheRoot(this.mixer.getRoot());
+          this.mixer = null;
+        }
+        this.mixer = new AnimationMixer(gltf.scene);
+        const activeAction = this.mixer.clipAction(gltf.animations[10]);
+        activeAction && activeAction.play();
+        const times = [];
+        const value = [];
+        const point = new Vector3(-900,0,0);
+        const step = 1400 / 1000;
+        for (let i = 0; i < 1000; i++) {
+          times.push(i / 1000);
+          point.setX(-900 + i * step).toArray(value, value.length);
+        }
+        const animationClip = new AnimationClip('move', 1, [new VectorKeyframeTrack('RootNode.position', times, value)]);
+        const temp = this.mixer.clipAction(animationClip);
+        console.log(temp);
+        temp.loop = LoopPingPong;
+        // temp.clampWhenFinished = true;
+        temp.timeScale = 0.1;
+        // temp.setLoop(LoopPingPong);
+        temp && temp.reset().play();
+        this.scene.add( gltf.scene );
+    
+        // createGUI( model, gltf.animations );
+    
+      }, undefined, function ( e ) {
+    
+        console.error( e );
+    
+      } );
+    };
+    initRender = (canvas) => {
+      const { clientHeight, clientWidth } = canvas;
+      if (WEBGL.isWebGL2Available()) {
+        console.log('webgl2');
+        const context = canvas.getContext('webgl2');
+        this.renderer = new WebGLRenderer({ canvas, antialias: true, context });
+      } else {
+        this.renderer = new WebGLRenderer({ canvas, antialias: true });
+      }
+      this.renderer.setClearColor('#aaaaaa');
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.renderer.gammaOutput = true;
+      this.renderer.gammaFactor = 2.2;
+      this.renderer.setSize(clientWidth, clientHeight);
+      this.renderer.render(this.scene, this.camera);
+    };
     componentDidMount() {
         const canvas = this.canvasRef.current;
+        this.initStats();
         if (canvas) {
             const { clientHeight, clientWidth } = canvas;
             this.scentSize = { width: clientWidth, height: clientHeight };
-            const perspective = 500;
-            this.camera = new OrthographicCamera(-clientWidth/2 , clientWidth/2, clientHeight/2, -clientHeight / 2, 0.01, 100000);
-            this.camera.name = 'Camera';
-            this.camera.position.set( 0, 0, perspective );
-            this.camera.lookAt( new Vector3() );
-            this.light = new DirectionalLight(0xffffff, 1);
-            this.light.position.set(-1, -1, 1);
+            // this.initPerspectiveCamera(clientWidth, clientHeight);
+            this.initOrthographicCamera(clientWidth, clientHeight, 500);
+            this.initLight();
             this.scene.add(this.light);
             this.raycaster = new Raycaster();
-            if (WEBGL.isWebGL2Available()) {
-                console.log('webgl2');
-                const context = canvas.getContext('webgl2');
-                this.renderer = new WebGLRenderer({ canvas, antialias: true, context });
-            } else {
-                this.renderer = new WebGLRenderer({ canvas, antialias: true });
-            }
-            this.renderer.setClearColor(0x000000);
-            this.renderer.setPixelRatio(window.devicePixelRatio);
-
+            this.initRender(canvas);
             this.imgLoader = new ImageBitmapLoader();
             // this.loaderImg(BgImg);
             this.scene.add(new AxesHelper(Math.max(clientHeight, clientWidth)));
@@ -188,11 +275,7 @@ export default class Sketchpad extends Component<Props, State> {
             this.orbitControls = new OrbitControls(this.camera, this.containerRef.current);
             this.orbitControls.screenSpacePanning = true;
             this.resetControlsRotateAngle(this.orbitControls);
-            this.renderer.gammaOutput = true;
-            this.renderer.gammaFactor = 2.2;
-            this.renderer.setSize(clientWidth, clientHeight);
-            this.renderer.setClearColor(new Color(0x000000));
-            this.renderer.render(this.scene, this.camera);
+          this.prevTime = 0;
             this.animate();
             this.subscribeSingle();
             // TODO 是否取整需要继续确认
@@ -202,9 +285,10 @@ export default class Sketchpad extends Component<Props, State> {
                 distinct(event => event.clientX + ':' + event.clientY, getDrawSignal()),
                 map(event => {
                     const { x, y, positionX, positionY } = transformCoordinateSys(event, this.canvasRef.current);
-                    const vector = new Vector3(x, y, 0);
+                    const vector = new Vector3(x, y);
                     vector.unproject(this.camera);
                     vector.setZ(0);
+                  console.log(vector);
                     vector.positionX = positionX;
                     vector.positionY = positionY;
                     return vector;
@@ -232,6 +316,8 @@ export default class Sketchpad extends Component<Props, State> {
                 }),
             ).subscribe(this.handleDrawMouseMove));
             this.eventSub.add(getValueSet().subscribe(this.changeObject));
+            // TODO remove
+            this.initModel();
         }
         console.log(this.renderer);
     }
@@ -459,11 +545,16 @@ export default class Sketchpad extends Component<Props, State> {
         this.actionSignalSub.unsubscribe();
         this.eventSub.unsubscribe();
     }
-    animate = () => {
+    animate = (time) => {
+      const dt = this.clock.getDelta();
         requestAnimationFrame(this.animate);
         // 需要更新
+      this.tween && this.tween.update(dt);
+        this.mixer && this.mixer.update(dt);
         this.orbitControls.update();
+        this.stats.update();
         this.renderer.render(this.scene, this.camera);
+        this.prevTime = time;
     };
     onMapChange = file => {
         console.log(file);
@@ -474,7 +565,148 @@ export default class Sketchpad extends Component<Props, State> {
         reader.readAsDataURL(file);
         return false;
     };
-    render() {
+  upLoadMap = (file, files) => {
+    console.log(files);
+    this.loadingModel(files);
+    return false;
+  };
+  loadingModel = debounce((files) => {
+    let rootFile, rootPath, type, mltUrl;
+    const fileMap = new Map();
+    files.forEach(file => {
+      const { name, webkitRelativePath } = file;
+      if (name.match(/\.(gltf|glb)$/i)) {
+        type = 'gltf';
+        rootFile = file;
+        rootPath = '/' + webkitRelativePath.replace(file.name, '');
+      } 
+      if(name.match(/\.obj$/i)) {
+        type = 'obj';
+        rootFile = file;
+        rootPath = '/' + webkitRelativePath.replace(file.name, '');
+      }
+      if(name.match(/\.mtl$/i)) {
+        // type = 'obj';
+        mltUrl = file;
+      }
+      if(name.match(/\.3ds$/i)) {
+        type = '3ds';
+        rootFile = file;
+        rootPath = '/' + webkitRelativePath.replace(file.name, '');
+        console.log(rootPath);
+      }
+      fileMap.set('/' + webkitRelativePath, file);
+    });
+    console.log(fileMap);
+    if (!rootFile) {
+      message.error('No model asset found.');
+      return false;
+    }
+//    TODO 加载模型之前清除已有场景
+    const fileURL = typeof rootFile === 'string'
+      ? rootFile
+      : URL.createObjectURL(rootFile);
+    mltUrl && (mltUrl = URL.createObjectURL(mltUrl));
+    type === 'gltf' && loadGltfModel(fileURL, rootPath, fileMap).then(res => {
+      if (typeof rootFile === 'object') URL.revokeObjectURL(fileURL);
+      this.setContent(res);
+      console.log(res);
+    });
+    type === 'obj' && loadObjModel(fileURL, mltUrl, rootPath, fileMap).then(res => {
+      if (typeof rootFile === 'object') URL.revokeObjectURL(fileURL);
+      this.setContent(res);
+      console.log(res);
+    });
+    type === '3ds' && load3DSModel(fileURL, rootPath, fileMap).then(res => {
+      if (typeof rootFile === 'object') URL.revokeObjectURL(fileURL);
+      this.setContent(res);
+      console.log(res);
+    });
+}, 1000);
+  setContent ({ scene: object, clips} ) {
+    
+    // this.clear();
+    
+    const box = new Box3().setFromObject(object);
+    const size = box.getSize(new Vector3()).length();
+    const center = box.getCenter(new Vector3());
+    
+    // this.controls.reset();
+    
+    object.position.x += (object.position.x - center.x);
+    object.position.y += (object.position.y - center.y);
+    object.position.z += (object.position.z - center.z);
+    // this.controls.maxDistance = size * 10;
+    // 透视相机调整参数至模型可见
+    // this.defaultCamera.near = size / 100;
+    // this.defaultCamera.far = size * 100;
+    // this.defaultCamera.updateProjectionMatrix();
+    
+    // if (this.options.cameraPosition) {
+    //  
+    //   this.defaultCamera.position.fromArray( this.options.cameraPosition );
+    //   this.defaultCamera.lookAt( new THREE.Vector3() );
+    //  
+    // } else {
+    //  
+    //   this.defaultCamera.position.copy(center);
+    //   this.defaultCamera.position.x += size / 2.0;
+    //   this.defaultCamera.position.y += size / 5.0;
+    //   this.defaultCamera.position.z += size / 2.0;
+    //   this.defaultCamera.lookAt(center);
+    //  
+    // }
+    
+    // this.setCamera(DEFAULT_CAMERA);
+    
+    console.log(object);
+    // this.controls.saveState();
+    
+    this.scene.add(object);
+    // this.content = object;
+    
+    // this.state.addLights = true;
+    // this.content.traverse((node) => {
+    //   if (node.isLight) {
+    //     this.state.addLights = false;
+    //   }
+    // });
+    
+    this.setClips(clips, object);
+    object.traverse((node) => {
+      if (node.isLight) {
+        // this.state.addLights = false;
+        console.log(node);
+      }
+    });
+    // this.updateLights();
+    // this.updateGUI();
+    // this.updateEnvironment();
+    // this.updateTextureEncoding();
+    // this.updateDisplay();
+    
+  }
+  setClips ( clips, object ) {
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+      this.mixer.uncacheRoot(this.mixer.getRoot());
+      this.mixer = null;
+    }
+    
+    this.clips = clips;
+    if (!clips.length) return;
+    
+    this.mixer = new AnimationMixer(object);
+    this.clips.forEach((clip, index) => {
+      if (index === 0) {
+        const action = this.mixer.clipAction(clip);
+        action.play();
+      }
+      // this.mixer.clipAction(clip).play();
+    });
+    this.clock.getElapsedTime();
+  }
+    render() { 
         return <div ref={this.containerRef} className="sketchpadContainers">
             <canvas ref={this.canvasRef} className="canvasContent">
                 Please use browser support canvas!
@@ -486,6 +718,11 @@ export default class Sketchpad extends Component<Props, State> {
                         <Icon type="upload" /> 上传底图
                     </Button>
                 </Upload>
+              <Upload name="file" beforeUpload={this.upLoadMap} showUploadList={false} directory={true}>
+                <Button>
+                  <Icon type="upload" /> 上传模型
+                </Button>
+              </Upload>
             </div>
         </div>;
     }
