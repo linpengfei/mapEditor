@@ -1,0 +1,7 @@
+.map-editor-scene {
+  flex: 1;
+  >.map-editor-scene-canvas {
+    width: 100%;
+    height: 100%;
+  }
+}

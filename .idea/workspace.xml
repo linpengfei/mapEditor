@@ -4,7 +4,16 @@
     <list default="true" id="7d27a33c-1fa2-4b08-9a63-7b16478a3c25" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Sketchpad.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Sketchpad.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/public/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.scss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.eot" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.eot" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.svg" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.ttf" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.ttf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff2" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff2" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -38,7 +47,7 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/assets/iconfont" />
     <property name="list.type.of.created.stylesheet" value="SCSS" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.standard" value="true" />
@@ -56,15 +65,15 @@
     <property name="ts.external.directory.path" value="D:\WebStorm 2018.2.2\plugins\JavaScriptLanguage\jsLanguageServicesImpl\external" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\work\react-three-test\src\actionPlane" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\work\react-three-test\src\assets\iconfont" />
+      <recent name="D:\work\react-three-test\src\Signal" />
       <recent name="D:\work\react-three-test\src" />
       <recent name="D:\work\react-three-test\src\assets\font" />
       <recent name="D:\work\react-three-test\src\assets\img" />
-      <recent name="D:\work\react-three-test\src\infoPlane" />
-      <recent name="D:\work\react-three-test\src\assets\iconfont" />
-    </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\work\react-three-test\src\actionPlane" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -120,6 +129,9 @@
       <workItem from="1567152681771" duration="1793000" />
       <workItem from="1567383815640" duration="28123000" />
       <workItem from="1567497405125" duration="22135000" />
+      <workItem from="1567988551606" duration="17367000" />
+      <workItem from="1568168471743" duration="306000" />
+      <workItem from="1568170730217" duration="9927000" />
     </task>
     <servers />
   </component>
