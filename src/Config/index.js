@@ -9,4 +9,11 @@ const meun = [{
   children: [{
     
   }]
-}]
+}];
+
+export const extrudeSettings = {
+  steps: 1,
+  depth: 100,
+  curveSegments: 100,
+  bevelEnabled: false,
+};

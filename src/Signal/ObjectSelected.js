@@ -4,13 +4,16 @@
  *
  **/
 import { Observable, Subject} from "rxjs";
-const objectSelectedSub = new Subject<Object>();
-
-function dispatch(object: Object) {
+export type ObjectSelectedData = {
+  type: string,
+  data: {},
+};
+const objectSelectedSub = new Subject<ObjectSelectedData>();
+function dispatch(object: ObjectSelectedData) {
   objectSelectedSub.next(object);
 }
 
-function subscribe(): Observable {
+function subscribe(): Observable<ObjectSelectedData> {
   return objectSelectedSub.asObservable();
 }
 export default { dispatch, subscribe };

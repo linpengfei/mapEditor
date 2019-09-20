@@ -68,11 +68,10 @@ function save( blob, filename ) {
     // URL.revokeObjectURL( url ); breaks Firefox...
 }
 
-export function generatePath(drawShape: string, drawPath: Array, radius: number, zoom: number) {
+export function generatePath(drawShape: string, drawPath: Array, zoom: number) {
     const path = new Shape();
     switch (drawShape) {
         case 'line':
-            // 3d
             path.moveTo(drawPath[0].x, drawPath[0].y, 0);
             path.lineTo(drawPath[1].x, drawPath[1].y, 0);
             break;
@@ -92,14 +91,37 @@ export function generatePath(drawShape: string, drawPath: Array, radius: number,
             break;
         case 'circle':
             path.moveTo(drawPath[0].x, drawPath[0].y, 0);
-            const a = new Vector2(drawPath[0].positionX, drawPath[0].positionY);
-            const b = new Vector2(drawPath[1].positionX, drawPath[1].positionY);
-            const radiusTemp = parseFloat(radius || (a.distanceTo(b) / zoom));
-            path.absarc(drawPath[0].x, drawPath[0].y, radiusTemp, 0, 2* Math.PI);
-            path.radius = radiusTemp;
+            const radius = parseFloat(drawPath[0].distanceTo(drawPath[1]));
+            path.absarc(drawPath[0].x, drawPath[0].y, radius, 0, 2* Math.PI);
+            break;
+        case 'path':
+            path.moveTo(drawPath[0].x, drawPath[0].y, 0);
+            for (let i = 1; i < drawPath.length; i++) {
+              path.lineTo(drawPath[i].x, drawPath[i].y, 0);
+            }
             break;
         default:
             break;
     }
     return path;
 }
+
+export function traverseMaterials (object, callback) {
+  object.traverse((node) => {
+    if (!node.isMesh) return;
+    const materials = Array.isArray(node.material)
+      ? node.material
+      : [node.material];
+    materials.forEach(callback);
+  });
+}
+export const GTLF_MAP_NAMES = [
+  'map',
+  'aoMap',
+  'emissiveMap',
+  'glossinessMap',
+  'metalnessMap',
+  'normalMap',
+  'roughnessMap',
+  'specularMap',
+];

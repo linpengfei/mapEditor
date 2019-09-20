@@ -7,6 +7,7 @@ import React, {Component} from 'react';
 import { Tabs } from 'antd';
 import "./index.scss";
 import SettingPlane from './Setting';
+import ScenePlane from './Scene';
 type Props = {};
 type State = {};
 const { TabPane } = Tabs;
@@ -22,7 +23,7 @@ class index extends Component<Props, State> {
     return <div className="map-editor-config-containers">
       <Tabs defaultActiveKey="1">
         <TabPane tab="场景" key="scene">
-          Content of Tab Pane 1
+          <ScenePlane />
         </TabPane>
         <TabPane tab="设置" key="setting">
           <SettingPlane />

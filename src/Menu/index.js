@@ -3,20 +3,23 @@
  * @flow
  *
  **/
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import { Menu, Dropdown, Icon } from 'antd';
+import { ObjectAdded } from '../Signal';
 type Props = {};
 type State = {};
-
+function addObject({ key }) {
+  ObjectAdded.dispatch({ type: key, data: { }});
+}
 const fileMenu = (
-  <Menu>
+  <Menu onClick={addObject}>
     <Menu.Item key="import">导入</Menu.Item>
     <Menu.Item key="export">导出</Menu.Item>
     <Menu.Item key="clear">清除</Menu.Item>
   </Menu>
 );
 const addMenu = (
-  <Menu>
+  <Menu onClick={addObject}>
     <Menu.Item key="box">正方体</Menu.Item>
     <Menu.Item key="circle">圆</Menu.Item>
     <Menu.Item key="cylinder">圆柱体</Menu.Item>
