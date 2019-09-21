@@ -11,6 +11,7 @@ import "./index.scss";
 import { Tabs } from 'antd';
 import MeshPlane from './Mesh';
 import GeometryPlane from './Geometry';
+import MaterialPlane from './Material';
 const { TabPane } = Tabs;
 type Props = {};
 type State = {};
@@ -36,7 +37,7 @@ class index extends Component<Props, State> {
           <GeometryPlane />
         </TabPane>
         <TabPane tab="材质" key="material" forceRender={true}>
-          Content of Tab Pane 3
+          <MaterialPlane />
         </TabPane>
       </Tabs>
     </div>;

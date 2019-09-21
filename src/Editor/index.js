@@ -333,7 +333,6 @@ class index extends Component<Props, State> {
     this.selectObject(this.selected);
   };
   onGeometryChange = data => {
-    console.log(data);
     const { type } = data;
     let geometry;
     switch (type) {
@@ -358,7 +357,20 @@ class index extends Component<Props, State> {
     this.selectObject(this.selected);
   };
   onMaterialChange = data => {
-    
+    console.log(data);
+    const { type, parameters } = data;
+    let material;
+    switch (type) {
+      case 'phong':
+        material = new MeshPhongMaterial(parameters);
+        break;
+      default:
+        break;
+    }
+    const oldMaterial = this.selected.material;
+    this.selected.material = material;
+    oldMaterial.dispose();
+    this.selectObject(this.selected);
   };
   getPoint = (event) => {
     // Todo 优化，提前获取坐标

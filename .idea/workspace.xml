@@ -3,25 +3,10 @@
   <component name="ChangeListManager">
     <list default="true" id="7d27a33c-1fa2-4b08-9a63-7b16478a3c25" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Config/menu.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Config/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ConfigPlane/Scene/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ConfigPlane/Scene/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ConfigPlane/Setting/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ConfigPlane/Setting/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ConfigPlane/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ConfigPlane/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ConfigPlane/index.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/ConfigPlane/index.scss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Editor/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Editor/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Menu/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Menu/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Signal/ObjectAdded.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Signal/ObjectAdded.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Signal/ObjectChanged.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Signal/ObjectChanged.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Signal/ObjectSelected.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Signal/ObjectSelected.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Signal/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Signal/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.eot" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.eot" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.svg" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.ttf" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.ttf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff2" beforeDir="false" afterPath="$PROJECT_DIR$/src/assets/iconfont/iconfont.woff2" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -142,7 +127,7 @@
       <workItem from="1568170730217" duration="9927000" />
       <workItem from="1568593857816" duration="676000" />
       <workItem from="1568594599389" duration="77384000" />
-      <workItem from="1568939503273" duration="16270000" />
+      <workItem from="1568939503273" duration="24030000" />
     </task>
     <servers />
   </component>
