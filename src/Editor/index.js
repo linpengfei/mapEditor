@@ -7,17 +7,17 @@ import React, {Component} from 'react';
 import "./index.scss";
 import Stats from "stats.js";
 import {
-  AmbientLight,
-  AxesHelper,
+  AmbientLight, AnimationMixer,
+  AxesHelper, Box3,
   BoxBufferGeometry,
   BoxHelper,
-  CameraHelper,
+  CameraHelper, CanvasTexture,
   CircleBufferGeometry,
   Clock,
   CylinderBufferGeometry,
   ExtrudeBufferGeometry,
   GridHelper,
-  Group,
+  Group, ImageBitmapLoader,
   Material,
   Math as _Math,
   Mesh,
@@ -25,25 +25,26 @@ import {
   MeshPhongMaterial,
   OrthographicCamera,
   PerspectiveCamera,
-  PlaneBufferGeometry,
+  PlaneBufferGeometry, PlaneGeometry,
   Raycaster,
   Scene,
-  SphereBufferGeometry, Sprite, SpriteMaterial, Texture,
+  SphereBufferGeometry, Texture,
   Vector2,
   Vector3,
   WebGLRenderer
 } from "three";
 import { WEBGL } from "three/examples/jsm/WebGL";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { ObjectRemoved, ObjectSelected, ObjectChanged, ObjectAdded } from '../Signal';
+import {ObjectRemoved, ObjectSelected, ObjectChanged, ObjectAdded, MenuClicked, ConfigChanged } from '../Signal';
 import {fromEvent, partition, Subject, Subscription} from "rxjs";
 import {throttleTime, map, distinct, filter} from "rxjs/operators";
-import { traverseMaterials, GTLF_MAP_NAMES, transformCoordinateSys, generatePath, generateTextMark} from "../utils";
+import { traverseMaterials, GTLF_MAP_NAMES, transformCoordinateSys, generatePath, saveArrayBuffer, saveString } from "../utils";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 import OperationPanel from "./OperationPanel";
-import {getDrawSignal} from "../actionPlane/DrawSinglServer";
-import { extrudeSettings } from '../Config';
+import DefaultConfig from '../Config';
 import debounce from 'lodash/debounce';
+import {GLTFExporter} from "three/examples/jsm/exporters/GLTFExporter";
+const { extrudeSettings, scene } = DefaultConfig;
 type Props = {};
 type State = {
   error: boolean,
@@ -78,9 +79,12 @@ class index extends Component<Props, State> {
   selectControl: TransformControls; // 选中物体控制器
   materialMap: Map<string, Material>; // 材质缓存
   sceneData: SceneData; // 场景相关数据
+  baseMapPlane: Object; // 底图对象
   subscription: Subscription; // 事件订阅处理
   clearPathSignal: Subject;
   handObjectChange: {[key: string]: Function};
+  handMenuAction: { [key: string]: Function};
+  configData: { width: number, height: number, scale: number };
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -94,6 +98,10 @@ class index extends Component<Props, State> {
       path: this.onPathChange,
       geometry: this.onGeometryChange,
       material: this.onMaterialChange,
+    };
+    this.handMenuAction = {
+      import: this.onImportModel,
+      export: this.onExportModel,
     };
   }
   static getDerivedStateFromError(error) {
@@ -112,6 +120,7 @@ class index extends Component<Props, State> {
       this.clock = new Clock();
       const { clientHeight, clientWidth } = canvas;
       this.sceneData = { width: clientWidth, height: clientHeight, scale: 1 };
+      ConfigChanged.modify({ scene: { width: clientWidth, height: clientHeight, scale: 1 }});
       // this.initPerspectiveCamera(clientWidth, clientHeight);
       this.initScene();
       this.initOrthographicCamera(clientWidth, clientHeight, 500);
@@ -150,6 +159,12 @@ class index extends Component<Props, State> {
   }
   
   componentWillUnmount(): * {
+    // TODO 取消动作循环，释放动画资源
+    // if (this.mixer) {
+    //   this.mixer.uncacheAction();
+    //  
+    // }
+    // cancelAnimationFrame();
     this.subscription.unsubscribe();
   }
   
@@ -157,7 +172,7 @@ class index extends Component<Props, State> {
   initStats = (dom: HTMLElement) => {
     this.stats = new Stats();
     this.stats.showPanel(0);
-    this.stats.dom.style.cssText = 'position:absolute;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000';
+    this.stats.dom.style.cssText = 'position:absolute;top:0;right:0;cursor:pointer;opacity:0.9;z-index:10000';
     dom.appendChild( this.stats.dom );
   };
   initScene = () => {
@@ -165,8 +180,8 @@ class index extends Component<Props, State> {
     this.scene.name = 'Scene';
     const max = Math.max(this.sceneData.width, this.sceneData.height);
     // TODO 背板透明度设置为0
-    this.basePlane = new Mesh(new PlaneBufferGeometry(this.sceneData.width * 10, this.sceneData.height * 10), new MeshBasicMaterial({ color: 0xffffff, opacity: 1, transparent: true }));
-    // this.basePlane.opacity = 0;
+    this.basePlane = new Mesh(new PlaneBufferGeometry(this.sceneData.width * 10, this.sceneData.height * 10), new MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true }));
+    this.basePlane.opacity = 0;
     this.scene.add(this.basePlane);
     const gridHelper = new GridHelper(max, 10);
     gridHelper.rotateX(Math.PI / 2);
@@ -225,7 +240,7 @@ class index extends Component<Props, State> {
     } else {
       this.renderer = new WebGLRenderer({ canvas, antialias: true });
     }
-    this.renderer.setClearColor('#aaaaaa');
+    this.renderer.setClearColor('#ffffff');
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.gammaOutput = true;
     this.renderer.gammaFactor = 2.2;
@@ -322,6 +337,111 @@ class index extends Component<Props, State> {
       const { type, data } = res;
       this.handObjectChange[type](data);
     }));
+    this.subscription.add(MenuClicked.subscribe().subscribe(res => {
+      const { type, data } = res;
+      this.handMenuAction[type](data);
+    }));
+    this.subscription.add(ConfigChanged.subscribe().subscribe( res => {
+      const { scene, map } = res;
+      if (map && map !== this.mapBaseFile) {
+        this.onMapBaseChange(map).then(img => {
+          const imgLoader = new ImageBitmapLoader();
+          imgLoader.load(img, imageBitMap => {
+            const texture = new CanvasTexture(imageBitMap);
+            const { width, height } = imageBitMap;
+            if (this.baseMapPlane) {
+              this.scene.remove(this.baseMapPlane);
+              this.baseMapPlane.material.dispose();
+              this.baseMapPlane.geometry.dispose();
+              this.baseMapPlane.material.map.dispose();
+            }
+            const material = new MeshBasicMaterial( { map: texture } );
+            const planeGeometry = new PlaneGeometry( width, height, 1, 1);
+            this.baseMapPlane = new Mesh( planeGeometry, material );
+            this.baseMapPlane.position.setZ(0);
+            this.baseMapPlane.rotateZ(Math.PI);
+            this.baseMapPlane.name = 'baseMapPlane';
+            this.scene.add( this.baseMapPlane );
+            ConfigChanged.modify({ scene: { width, height, scale: this.configData.scale }});
+          });
+        });
+      }
+      this.configData = scene;
+    }));
+  };
+  onMapBaseChange = file => {
+    this.mapBaseFile = file;
+    console.log(file);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        // this.loaderImg(reader.result);
+        resolve(reader.result);
+      });
+      reader.addEventListener('error', () => {
+        reject('')
+      });
+      reader.readAsDataURL(file.originFileObj);
+    });
+  };
+  onImportModel =  ({ scene: object, clips} ) => {
+    const box = new Box3().setFromObject(object);
+    const size = box.getSize(new Vector3()).length();
+    console.log(size);
+    const center = box.getCenter(new Vector3());
+    console.log(center);
+    console.log(box);
+    // 会将物体重置到中心
+    // object.position.x += (object.position.x - center.x);
+    // object.position.y += (object.position.y - center.y);
+    // object.position.z += (object.position.z - center.z);
+    // this.controls.maxDistance = size * 10;
+    // 透视相机调整参数至模型可见
+    // this.defaultCamera.near = size / 100;
+    // this.defaultCamera.far = size * 100;
+    // this.defaultCamera.updateProjectionMatrix();
+    
+    // TODO 切换相机？
+    console.log(this.scene);
+    this.objGroup.add(object);
+    this.setClips(clips, object);
+  };
+  onExportModel = (data) => {
+    const { name = 'scene', options } = data;
+    const { animation } = options;
+    delete options.animation;
+    const exporter = new GLTFExporter();
+    this.objGroup.userData = this.configData;
+    exporter.parse(this.objGroup, result => {
+      if (result instanceof ArrayBuffer) {
+        saveArrayBuffer( result, name +  '.glb' );
+      } else {
+        result.asset.sceneSize = this.configData;
+        const output = JSON.stringify( result, null, 2 );
+        console.log( output );
+        saveString( output, name + '.gltf' );
+      }
+    }, options);
+  };
+  setClips  = ( clips, object ) => {
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+      this.mixer.uncacheRoot(this.mixer.getRoot());
+      this.mixer = null;
+    }
+    
+    this.clips = clips;
+    if (!clips.length) return;
+    
+    this.mixer = new AnimationMixer(object);
+    this.clips.forEach((clip, index) => {
+      if (index === 0) {
+        const action = this.mixer.clipAction(clip);
+        action.play();
+      }
+      // this.mixer.clipAction(clip).play();
+    });
+    this.clock.getElapsedTime();
   };
   onPathChange = data => {
     const { path, depth, type } = data;
@@ -516,7 +636,22 @@ class index extends Component<Props, State> {
       this.selectObject(null);
       this.setDrawControlsAngle();
       this.clearDraw();
+      this.selectControl.setMode('translate');
     } else {
+      console.log(type);
+      switch (key) {
+        case 'move':
+          this.selectControl.setMode('translate');
+          break;
+        case 'rotate':
+          this.selectControl.setMode('rotate');
+          break;
+        case 'scale':
+          this.selectControl.setMode('scale');
+          break;
+        default:
+          break;
+      }
       this.clearDraw();
       this.resetControlsRotateAngle();
     }

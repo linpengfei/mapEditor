@@ -69,7 +69,7 @@ export function loadGltfModel(url, rootPath, assetMap) {
 }
 
 
-export function loadObjModel(url, mtlUrl, rootPath, assetMap) {
+export function loadObjModel(url, rootPath, assetMap, mtlUrl) {
   const baseURL = LoaderUtils.extractUrlBase(url);
   return new Promise((resolve, reject) => {
     

@@ -27,7 +27,7 @@ class index extends Component<Props, State> {
     } else {
       this.props.onClick({ type: 'obj', key: e.key });
     }
-  }
+  };
   render() {
     return <div className="map-editor-operation-plane">
       <Menu onClick={this.handleClick} mode="vertical">

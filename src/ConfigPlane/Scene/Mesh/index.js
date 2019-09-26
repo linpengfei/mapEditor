@@ -13,8 +13,15 @@ import { ObjectSelected, ObjectChanged } from '../../../Signal';
 import { Subscription } from "rxjs";
 import {Math as _Math, Mesh} from "three";
 import debounce from 'lodash/debounce';
-import {extrudeSettings} from "../../../Config";
-
+function transFormValue(value) {
+    const temp = parseFloat(value);
+    if (!isNaN(temp)) {
+      value = temp;
+    } else if (value !== '-') {
+      value = 0;
+    }
+  return value;
+}
 type Props = {};
 type State = {
   uuid: string,
@@ -124,37 +131,37 @@ class index extends Component<Props, State> {
       <Row>
         <Col span={4} offset={2}>位置</Col>
         <Col span={6}>
-          <InputNumber value={position.x} parser={value => parseFloat(value)} onChange={value => this.onChange('position', 'x', value)}/>
+          <InputNumber value={position.x} parser={transFormValue} onChange={value => this.onChange('position', 'x', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={position.y} parser={value => parseFloat(value)} onChange={value => this.onChange('position', 'y', value)}/>
+          <InputNumber value={position.y} parser={transFormValue} onChange={value => this.onChange('position', 'y', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={position.z} parser={value => parseFloat(value)} onChange={value => this.onChange('position', 'z', value)}/>
+          <InputNumber value={position.z} parser={transFormValue} onChange={value => this.onChange('position', 'z', value)}/>
         </Col>
       </Row>
       <Row>
         <Col span={4} offset={2}>旋转</Col>
         <Col span={6}>
-          <InputNumber value={rotation.x} parser={value => parseFloat(value)} onChange={value => this.onChange('rotation', 'x', value)}/>
+          <InputNumber value={rotation.x} parser={transFormValue} onChange={value => this.onChange('rotation', 'x', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={rotation.y} parser={value => parseFloat(value)} onChange={value => this.onChange('rotation', 'y', value)}/>
+          <InputNumber value={rotation.y} parser={transFormValue} onChange={value => this.onChange('rotation', 'y', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={rotation.z} parser={value => parseFloat(value)} onChange={value => this.onChange('rotation', 'z', value)}/>
+          <InputNumber value={rotation.z} parser={transFormValue} onChange={value => this.onChange('rotation', 'z', value)}/>
         </Col>
       </Row>
       <Row>
         <Col span={4} offset={2}>缩放</Col>
         <Col span={6}>
-          <InputNumber value={scale.x} parser={value => parseFloat(value)} onChange={value => this.onChange('scale', 'x', value)}/>
+          <InputNumber value={scale.x} parser={transFormValue} onChange={value => this.onChange('scale', 'x', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={scale.y} parser={value => parseFloat(value)} onChange={value => this.onChange('scale', 'x', value)}/>
+          <InputNumber value={scale.y} parser={transFormValue} onChange={value => this.onChange('scale', 'x', value)}/>
         </Col>
         <Col span={6}>
-          <InputNumber value={scale.z} parser={value => parseFloat(value)} onChange={value => this.onChange('scale', 'x', value)}/>
+          <InputNumber value={scale.z} parser={transFormValue} onChange={value => this.onChange('scale', 'x', value)}/>
         </Col>
       </Row>
       {type ? <React.Fragment>
@@ -166,18 +173,18 @@ class index extends Component<Props, State> {
         <Row>
           <Col span={4} offset={2}>高度</Col>
           {/*TODO 类型转换*/}
-          <InputNumber value={depth} parser={value => parseFloat(value)} onChange={value => this.onChange('depth', value)}/>
+          <InputNumber value={depth} parser={transFormValue} onChange={value => this.onChange('depth', value)}/>
         </Row>
         {path.map((point, i) => <Row key={i}>
           <Col span={4} offset={2}>点{i+1}</Col>
           <Col span={6}>
-            <InputNumber value={point.x} parser={value => parseFloat(value)} onChange={value => this.onChange('path', i, 'x',  value)}/>
+            <InputNumber value={point.x} parser={transFormValue} onChange={value => this.onChange('path', i, 'x',  value)}/>
           </Col>
           <Col span={6}>
-            <InputNumber value={point.y} parser={value => parseFloat(value)} onChange={value => this.onChange('path', i, 'x', value)}/>
+            <InputNumber value={point.y} parser={transFormValue} onChange={value => this.onChange('path', i, 'x', value)}/>
           </Col>
           <Col span={6}>
-            <InputNumber value={point.z} parser={value => parseFloat(value)} onChange={value => this.onChange('path', i, 'x', value)}/>
+            <InputNumber value={point.z} parser={transFormValue} onChange={value => this.onChange('path', i, 'x', value)}/>
           </Col>
         </Row>
         )}

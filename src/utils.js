@@ -65,7 +65,7 @@ function save( blob, filename ) {
     link.download = filename;
     link.click();
     document.body.removeChild(link);
-    // URL.revokeObjectURL( url ); breaks Firefox...
+    // URL.revokeObjectURL( url ); //breaks Firefox...
 }
 
 export function generatePath(drawShape: string, drawPath: Array, zoom: number) {
